@@ -1,0 +1,61 @@
+services:
+  otel-collector:
+    container_name: otel-collector
+    image: otel/opentelemetry-collector:latest
+    restart: always
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    volumes:
+      - ./.docker/otel-collector-config.yaml:/etc/otel-collector-config.yaml
+    ports:
+      - "4317:4317"   # OTLP gRPC receiver
+
+  zipkin:
+    container_name: zipkin
+    image: openzipkin/zipkin:latest
+    restart: always
+    ports:
+      - "9411:9411"
+
+  jaeger:
+    container_name: jaeger
+    image: jaegertracing/all-in-one:latest
+    restart: always
+    ports:
+      - "16686:16686"
+
+  cep-app:
+    container_name: cep-app
+    build:
+      context: .
+    environment:
+      - EXTERNAL_CALL_URL=http://cep-app1:8181
+      - REQUEST_NAME_OTEL=cep-app-request
+      - OTEL_SERVICE_NAME=cep-app
+      - OTEL_EXPORTER_OTLP_ENDPOINT=otel-collector:4317
+      - ZIPKIN_ENDPOINT=http://zipkin:9411/api/v2/spans
+      - HTTP_PORT=8080
+    ports:
+      - "8080:8080"
+    depends_on:
+      - otel-collector
+      - zipkin
+      - jaeger
+
+
+  cep-app1:
+    container_name: cep-app1
+    build:
+      context: .
+    environment:
+      - WEATHER_API_KEY=
+      - REQUEST_NAME_OTEL=cep-app1-request
+      - OTEL_SERVICE_NAME=cep-app1
+      - OTEL_EXPORTER_OTLP_ENDPOINT=otel-collector:4317
+      - ZIPKIN_ENDPOINT=http://zipkin:9411/api/v2/spans
+      - HTTP_PORT=8181
+    ports:
+      - "8181:8181"
+    depends_on:
+      - otel-collector
+      - zipkin
+      - jaeger

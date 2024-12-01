@@ -1,0 +1,15 @@
+@cep = 14801000
+
+POST  http://localhost:8080/ HTTP/1.1
+Content-Type: application/json
+
+{ "cep": "{{cep}}" }
+
+###
+GET http://localhost:8080/health HTTP/1.1
+Content-Type: application/json
+
+
+###
+GET http://localhost:8181/{{cep}} HTTP/1.1
+Content-Type: application/json
